@@ -177,28 +177,28 @@ router.get('/edit-crypto/:id', isAuth, async (req, res) => {
 // POST /gizli-erisim-b7k2 (Yönlendirme DÜZELTİLDİ)
 // adminBot.js - POST /gizli-erisim-b7k2 bloğunu güncelleyin
 router.post('/gizli-erisim-b7k2', async (req, res) => {
-    const { password } = req.body;
-    if (password && password === process.env.ADMIN_PASSWORD) {
-        req.session.isAdmin = true;
-        req.session.save(err => {
-            if (err) {
-                req.flash('error', 'Oturum hatası oluştu.');
-                return res.redirect('/s-panel-a4x9/gizli-erisim-b7k2');
-            }
-            res.redirect('/s-panel-a4x9/dashboard');
-        });
-    } else {
-        req.flash('error', 'Yanlış şifre.');
+    try {
+        const { password } = req.body;
+        if (password && password === process.env.ADMIN_PASSWORD) {
+            req.session.isAdmin = true;
+            req.session.save(err => {
+                if (err) {
+                    req.flash('error', 'Oturum hatası oluştu.');
+                    return res.redirect('/s-panel-a4x9/gizli-erisim-b7k2');
+                }
+                res.redirect('/s-panel-a4x9/dashboard');
+            });
+        } else {
+            req.flash('error', 'Yanlış şifre.');
+            res.redirect('/s-panel-a4x9/gizli-erisim-b7k2');
+        }
+    } catch (err) {
+        console.error("Admin login hatası:", err);
+        req.flash('error', 'Giriş sırasında bir sunucu hatası oluştu.');
         res.redirect('/s-panel-a4x9/gizli-erisim-b7k2');
     }
 });
 
-     catch (err) {
-        console.error("Admin login hatası:", err);
-        req.flash('error', 'Giriş sırasında bir sunucu hatası oluştu.');
-        res.redirect('/admin/login');
-    }
-});
 
 
 // -------------------------------------------------------------------
