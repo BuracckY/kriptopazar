@@ -58,7 +58,7 @@ app.use((req, res, next) => {
 });
 
 // --- Rotalar ---
-app.use('/admin', adminRoutes);
+app.use('/s-panel-a4x9', adminRoutes);
 app.use('/', mainRoutes);
 
 // --- Telegram Bot ---
