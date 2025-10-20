@@ -11,46 +11,67 @@ const adminRoutes = require('./routes/adminRoutes');
 const mainRoutes = require('./routes/mainRoutes');
 
 const app = express();
+const PORT = process.env.PORT || 3000;
 
-// --- MongoDB Bağlantısı ---
-mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-    .then(() => console.log('MongoDB bağlantısı başarılı.'))
-    .catch(err => console.error('MongoDB bağlantı hatası:', err));
+// MongoDB Bağlantısı
+mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log("MongoDB bağlantısı başarılı."))
+    .catch(err => {
+        console.error("MongoDB BAĞLANTI HATASI:", err);
+        process.exit(1);
+    });
 
-// --- Middleware ---
-app.use(express.urlencoded({ extended: true }));
+// --- Middleware'ler ---
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+
+// .env kontrolleri
+if (!process.env.SESSION_SECRET || !process.env.MONGO_URI) {
+    console.error("HATA: .env dosyasında SESSION_SECRET veya MONGO_URI eksik!");
+    process.exit(1);
+}
+
+// --- Session Ayarları ---
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'secret',
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
-    cookie: { maxAge: 1000 * 60 * 60 } // 1 saat
+    cookie: {
+        maxAge: 10800000,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production', // Lokal geliştirmede false
+        sameSite: 'lax'
+    }
 }));
+
+// --- Flash & locals ---
 app.use(flash());
+app.use((req, res, next) => {
+    res.locals.successMsg = req.flash('success');
+    res.locals.errorMsg = req.flash('error');
+    res.locals.isAdmin = req.session.isAdmin || false;
+    next();
+});
 
-// --- Static ve View Ayarları ---
-app.use(express.static(path.join(__dirname, 'public')));
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'ejs');
-
-// --- Routes ---
-app.use('/', mainRoutes);
+// --- Rotalar ---
 app.use('/admin', adminRoutes);
+app.use('/', mainRoutes);
 
-// --- 404 Handler ---
-app.use((req, res) => {
-    res.status(404).render('404');
-});
+// --- Telegram Bot ---
+try { require('./bot.js'); }
+catch (botError) { console.error("Telegram botu başlatılırken hata:", botError); }
 
-// --- Global Error Handler ---
+// --- Hata Yakalama Middleware'i ---
 app.use((err, req, res, next) => {
-    console.error('Global Hata Yakalama:', err);
-    res.status(500).render('500', { error: err });
+    console.error("Beklenmedik Sunucu Hatası:", err.stack);
+    res.status(500).send('Sunucuda bir hata oluştu!');
 });
 
-// --- Sunucu Başlat ---
-const PORT = process.env.PORT || 3000;
+// --- Sunucuyu Başlat ---
 app.listen(PORT, () => {
-    console.log(`Sunucu ${PORT} portunda çalışıyor.`);
+    console.log(`Sunucu http://localhost:${PORT} adresinde çalışıyor...`);
 });
