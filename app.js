@@ -32,19 +32,22 @@ if (!process.env.SESSION_SECRET || !process.env.MONGO_URI) {
     console.error("HATA: .env dosyasında SESSION_SECRET veya MONGO_URI eksik!");
     process.exit(1);
 }
+// app.js - Session middleware bloğunu güncelleyin
 app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
-    saveUninitialized: false,
+    saveUninitialized: false, // Bu 'false' olmalı
     store: MongoStore.create({
         mongoUrl: process.env.MONGO_URI,
         collectionName: 'sessions',
-        ttl: 60 * 60 * 3 // 3 saat
+        ttl: 60 * 60 * 3, // 3 saat
+        touchAfter: 24 * 3600 // 24 saat (performans için)
     }),
     cookie: {
         maxAge: 1000 * 60 * 60 * 3, // 3 saat
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production'
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax' // ****** YENİ: Cookie güvenliği için ******
     }
 }));
 app.use(flash());
