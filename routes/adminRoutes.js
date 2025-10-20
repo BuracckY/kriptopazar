@@ -176,27 +176,22 @@ router.get('/edit-crypto/:id', isAuth, async (req, res) => {
 
 // POST /gizli-erisim-b7k2 (Yönlendirme DÜZELTİLDİ)
 // adminBot.js - POST /gizli-erisim-b7k2 bloğunu güncelleyin
-router.post('/login', async (req, res) => {
-    try {
-        const { password } = req.body;
-
-        if (password && process.env.ADMIN_PASSWORD && password === process.env.ADMIN_PASSWORD) {
-            req.session.isAdmin = true;
-
-            // Session kaydedildikten sonra yönlendirme
-            req.session.save(err => {
-                if(err) {
-                    console.error("Session kaydetme hatası:", err);
-                    req.flash('error', 'Oturum hatası oluştu.');
-                    return res.redirect('/admin/login');
-                }
-                res.redirect('/admin/dashboard');
-            });
-
-        } else {
-            req.flash('error', 'Yanlış şifre.');
-            res.redirect('/admin/login');
-        }
+router.post('/gizli-erisim-b7k2', async (req, res) => {
+    const { password } = req.body;
+    if (password && password === process.env.ADMIN_PASSWORD) {
+        req.session.isAdmin = true;
+        req.session.save(err => {
+            if (err) {
+                req.flash('error', 'Oturum hatası oluştu.');
+                return res.redirect('/s-panel-a4x9/gizli-erisim-b7k2');
+            }
+            res.redirect('/s-panel-a4x9/dashboard');
+        });
+    } else {
+        req.flash('error', 'Yanlış şifre.');
+        res.redirect('/s-panel-a4x9/gizli-erisim-b7k2');
+    }
+});
 
     } catch (err) {
         console.error("Admin login hatası:", err);
