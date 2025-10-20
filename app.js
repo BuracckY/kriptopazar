@@ -1,80 +1,55 @@
-require('dotenv').config(); // .env dosyasını yüklemek için EN BAŞTA olmalı
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
+const flash = require('connect-flash');
 const path = require('path');
-const flash = require('connect-flash'); // Flash mesajları için
 
-// Rota dosyalarını import et
 const adminRoutes = require('./routes/adminRoutes');
 const mainRoutes = require('./routes/mainRoutes');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-// MongoDB Bağlantısı
-mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log("MongoDB bağlantısı başarılı."))
-    .catch(err => {
-        console.error("MongoDB BAĞLANTI HATASI:", err);
-        process.exit(1);
-    });
+// --- Mongoose bağlan
+mongoose.connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+}).then(() => console.log('MongoDB bağlantısı başarılı'))
+  .catch(err => console.error('MongoDB bağlantı hatası:', err));
 
-// --- Middleware'ler ---
-app.use(express.json());
-app.use(express.urlencoded({ extended: true })); // Form verilerini (req.body) okumak için
-app.use(express.static(path.join(__dirname, 'public')));
-app.set('view engine', 'ejs');
+// --- View engine
 app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'ejs');
 
-if (!process.env.SESSION_SECRET || !process.env.MONGO_URI) {
-    console.error("HATA: .env dosyasında SESSION_SECRET veya MONGO_URI eksik!");
-    process.exit(1);
-}
-// app.js - Session middleware bloğunu güncelleyin
+// --- Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
+
+// --- Session (secure: sadece production)
 app.use(session({
-    secret: process.env.SESSION_SECRET,
+    secret: process.env.SESSION_SECRET || 'defaultsecret',
     resave: false,
-    saveUninitialized: false, // Bu 'false' olmalı
-    store: MongoStore.create({
-        mongoUrl: process.env.MONGO_URI,
-        collectionName: 'sessions',
-        ttl: 60 * 60 * 3, // 3 saat
-        touchAfter: 24 * 3600 // 24 saat (performans için)
-    }),
+    saveUninitialized: false,
+    store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
     cookie: {
-        maxAge: 1000 * 60 * 60 * 3, // 3 saat
+        maxAge: 10800000,
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax' // ****** YENİ: Cookie güvenliği için ******
+        secure: process.env.NODE_ENV === 'production', // HTTP'de false
+        sameSite: 'lax'
     }
 }));
+
 app.use(flash());
-app.use((req, res, next) => {
-    res.locals.successMsg = req.flash('success');
-    res.locals.errorMsg = req.flash('error');
-    res.locals.isAdmin = req.session.isAdmin || false;
-    next();
-});
 
-// --- Rotalar (****** GÜNCELLENDİ ******) ---
-// '/admin' yerine tahmin edilmesi zor bir yol (prefix) kullanıyoruz.
-app.use('/s-panel-a4x9', adminRoutes);
+// --- Routerlar
+app.use('/admin', adminRoutes);
 app.use('/', mainRoutes);
-// ****** /GÜNCELLENDİ ******
 
-// --- Telegram Bot ---
-try { require('./bot.js'); }
-catch (botError) { console.error("Telegram botu başlatılırken hata:", botError); }
+// --- 404
+app.use((req, res) => { res.status(404).send('Sayfa bulunamadı'); });
 
-// --- Hata Yakalama Middleware'i ---
-app.use((err, req, res, next) => {
-    console.error("Beklenmedik Sunucu Hatası:", err.stack);
-    res.status(500).send('Sunucuda bir hata oluştu!');
-});
-
-// --- Sunucuyu Başlat ---
-app.listen(PORT, () => {
-    console.log(`Sunucu http://localhost:${PORT} adresinde çalışıyor...`);
-});
+// --- Server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Sunucu çalışıyor: ${PORT}`));
