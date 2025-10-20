@@ -24,15 +24,20 @@ const cleanErrorMessage = (message) => {
 
 
 // --- Admin Giriş Kontrol Middleware (Yönlendirme doğru) ---
+// adminRoutes.js - isAuth middleware'ini güncelleyin
 const isAuth = (req, res, next) => {
     console.log(`--- isAuth Kontrolü Tetiklendi: ${req.path} ---`);
-    if (req.session && req.session.isAdmin) {
+    console.log("   Session ID:", req.sessionID); // Session ID'yi logla
+    console.log("   Session İçeriği:", req.session); // Tüm session'ı logla
+    console.log("   req.session.isAdmin:", req.session.isAdmin); // Spesifik değeri logla
+    
+    if (req.session && req.session.isAdmin === true) {
         console.log("   Durum: Yetkili (isAdmin=true). İzin verildi.");
-        next();
+        return next();
     } else {
         console.warn("   Durum: Yetkisiz. Gizli giriş sayfasına yönlendiriliyor.");
         req.flash('error', 'Bu sayfaya erişim için giriş yapmalısınız.');
-        res.redirect(FULL_LOGIN_URL);
+        return res.redirect(FULL_LOGIN_URL);
     }
 };
 
