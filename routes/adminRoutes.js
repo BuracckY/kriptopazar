@@ -170,6 +170,7 @@ router.get('/edit-crypto/:id', isAuth, async (req, res) => {
 // --- POST Rotaları (Form İşlemleri) ---
 
 // POST /gizli-erisim-b7k2 (Yönlendirme DÜZELTİLDİ)
+// adminBot.js - POST /gizli-erisim-b7k2 bloğunu güncelleyin
 router.post(ADMIN_LOGIN_PATH, async (req, res) => {
     console.log(`--- POST ${ADMIN_LOGIN_PATH} isteği alındı (Giriş denemesi) ---`);
     try {
@@ -185,27 +186,27 @@ router.post(ADMIN_LOGIN_PATH, async (req, res) => {
             console.log("   Durum: Şifre DOĞRU.");
             req.session.isAdmin = true;
             
-            req.session.save(err => {
+            // ****** DÜZELTİLDİ: Session'ın kaydedildiğinden emin olun ******
+            return req.session.save(err => {
                 if (err) { 
                     console.error("   !!! HATA: Session kaydetme hatası:", err); 
                     req.flash('error', 'Oturum hatası oluştu.'); 
                     return res.redirect(FULL_LOGIN_URL); 
                 }
                 console.log("   Durum: Session kaydedildi. /dashboard yönlendiriliyor...");
-                // ****** GÜNCELLENDİ ******
-                // '/dashboard' (root) yerine tam prefix'li yola yönlendir
-                res.redirect(`${ADMIN_PREFIX}/dashboard`);
-                // ****** /GÜNCELLENDİ ******
+                console.log("   Session içeriği:", req.session); // DEBUG için
+                return res.redirect(`${ADMIN_PREFIX}/dashboard`);
             });
+            // ****** /DÜZELTİLDİ ******
         } else {
             console.warn("   Durum: Şifre YANLIŞ.");
             req.flash('error', 'Yanlış şifre.');
-            res.redirect(FULL_LOGIN_URL);
+            return res.redirect(FULL_LOGIN_URL);
         }
     } catch (err) { 
         console.error("   !!! HATA: Admin login try-catch bloğuna düştü:", err); 
         req.flash('error', 'Giriş sırasında bir sunucu hatası oluştu.'); 
-        res.redirect(FULL_LOGIN_URL); 
+        return res.redirect(FULL_LOGIN_URL); 
     }
 });
 
