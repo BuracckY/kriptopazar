@@ -193,7 +193,7 @@ router.post('/gizli-erisim-b7k2', async (req, res) => {
     }
 });
 
-    } catch (err) {
+     catch (err) {
         console.error("Admin login hatası:", err);
         req.flash('error', 'Giriş sırasında bir sunucu hatası oluştu.');
         res.redirect('/admin/login');
